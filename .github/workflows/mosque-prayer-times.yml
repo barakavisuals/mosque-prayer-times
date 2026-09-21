@@ -1,4 +1,4 @@
-name: Test Prayer Times
+name: Update Prayer Times
 
 on:
   workflow_dispatch:
