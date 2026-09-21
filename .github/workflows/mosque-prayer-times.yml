@@ -23,3 +23,9 @@ jobs:
       - name: Run prayer time script
         run: |
           python prayer_times.py
+
+      - name: Upload prayer times
+        uses: actions/upload-artifact@v4
+        with:
+          name: prayer-times
+          path: prayer_times.json
