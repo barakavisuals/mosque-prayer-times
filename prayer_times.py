@@ -75,8 +75,6 @@ def get_namcc():
         f"NAMCC: could not find today's row ({today})"
     )
 
-
-```python
 def get_icrr():
     """
     ICRR prayer times are published through Our Masajid.
