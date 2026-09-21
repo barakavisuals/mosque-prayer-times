@@ -155,7 +155,9 @@ if __name__ == "__main__":
         main()
     except Exception as e:
         print("ERROR:", e)
-        sys.exit(1)        rows = table.find_all("tr")
+        sys.exit(1)
+
+            rows = table.find_all("tr")
 
         if not rows:
             continue
