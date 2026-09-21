@@ -1,220 +1,311 @@
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
-import re
-
-TODAY = datetime.now().strftime("%Y-%m-%d")
-
-URLS = {
-    "ICRR": "https://roundrockmasjid.org/prayer-times",
-    "NAMCC": "https://namcc.org/monthly-prayer-times/",
-}
-
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/140.0 Safari/537.36"
-    )
-}
+import json
+import sys
 
 
-def get_page(name, url):
-    print("\n" + "=" * 80)
-    print(f"{name} - FETCH")
-    print("=" * 80)
+TODAY = datetime.now()
+TODAY_MONTH_DAY = TODAY.strftime("%b %d")
+TODAY_DAY = TODAY.strftime("%d")
+TODAY_MONTH = TODAY.strftime("%b")
 
+
+ICRR_URL = "https://roundrockmasjid.org/prayer-times"
+NAMCC_URL = "https://namcc.org/monthly-prayer-times/"
+
+
+def get_soup(url):
     response = requests.get(
         url,
         timeout=30,
-        headers=HEADERS
+        headers={
+            "User-Agent": "Mozilla/5.0 (Prayer Times Automation)"
+        }
     )
-
-    print("URL:", url)
-    print("HTTP STATUS:", response.status_code)
-    print("CONTENT TYPE:", response.headers.get("content-type"))
-    print("CONTENT LENGTH:", len(response.text))
-
     response.raise_for_status()
+    return BeautifulSoup(response.text, "html.parser")
 
-    return response.text
+
+def normalize_time(value):
+    """Convert source time to HH:MM 24-hour format."""
+    value = value.strip()
+
+    formats = [
+        "%I:%M %p",
+        "%I:%M%p",
+        "%H:%M",
+    ]
+
+    for fmt in formats:
+        try:
+            return datetime.strptime(value, fmt).strftime("%H:%M")
+        except ValueError:
+            pass
+
+    raise ValueError(f"Could not understand time: {value}")
 
 
-def inspect_page(name, html):
-    print("\n" + "=" * 80)
-    print(f"{name} - PAGE INSPECTION")
-    print("=" * 80)
+def normalize_date(value):
+    """Normalize dates such as 'Sep 21', 'September 21', '21', etc."""
+    value = " ".join(value.strip().split())
 
-    soup = BeautifulSoup(html, "html.parser")
+    formats = [
+        "%b %d",
+        "%B %d",
+        "%m/%d",
+        "%m/%d/%Y",
+        "%Y-%m-%d",
+    ]
 
-    # --------------------------------------------------
-    # TITLE
-    # --------------------------------------------------
+    for fmt in formats:
+        try:
+            parsed = datetime.strptime(value, fmt)
+            return parsed.strftime("%b %d")
+        except ValueError:
+            pass
 
-    print("\nPAGE TITLE:")
-    print(soup.title.get_text(" ", strip=True) if soup.title else "NO TITLE")
+    return value
 
-    # --------------------------------------------------
-    # TABLES
-    # --------------------------------------------------
+
+def get_icrr():
+    print("\n=== ICRR ===")
+    print(f"Looking for today's date: {TODAY_MONTH_DAY}")
+
+    soup = get_soup(ICRR_URL)
 
     tables = soup.find_all("table")
 
-    print("\nTABLE COUNT:", len(tables))
+    print(f"Found {len(tables)} table(s)")
 
-    for i, table in enumerate(tables, 1):
+    for table in tables:
+        rows = table.find_all("tr")
 
-        print("\n--- TABLE", i, "---")
+        if not rows:
+            continue
+
+        header_cells = rows[0].find_all(["th", "td"])
+        headers = [
+            cell.get_text(" ", strip=True)
+            for cell in header_cells
+        ]
+
+        expected = ["Date", "Fajr", "Zuhr", "Asr", "Maghrib", "Isha"]
+
+        if not all(item in headers for item in expected):
+            continue
+
+        print(f"Using ICRR table headers: {headers}")
+
+        header_map = {
+            header.lower(): index
+            for index, header in enumerate(headers)
+        }
+
+        for row in rows[1:]:
+            cells = row.find_all(["td", "th"])
+            values = [
+                cell.get_text(" ", strip=True)
+                for cell in cells
+            ]
+
+            if len(values) < len(headers):
+                continue
+
+            row_date = normalize_date(values[header_map["date"]])
+
+            if row_date != TODAY_MONTH_DAY:
+                continue
+
+            print(f"Found ICRR date row: {values}")
+
+            return {
+                "fajr": {
+                    "athan": normalize_time(values[header_map["fajr"]]),
+                    "iqamah": None
+                },
+                "dhuhr": {
+                    "athan": normalize_time(values[header_map["zuhr"]]),
+                    "iqamah": None
+                },
+                "asr": {
+                    "athan": normalize_time(values[header_map["asr"]]),
+                    "iqamah": None
+                },
+                "maghrib": {
+                    "athan": normalize_time(values[header_map["maghrib"]]),
+                    "iqamah": None
+                },
+                "isha": {
+                    "athan": normalize_time(values[header_map["isha"]]),
+                    "iqamah": None
+                }
+            }
+
+    raise RuntimeError(
+        f"ICRR does not have a prayer-time row for {TODAY_MONTH_DAY}"
+    )
+
+
+def get_namcc():
+    print("\n=== NAMCC ===")
+    print(f"Looking for today's date: {TODAY_DAY}")
+
+    soup = get_soup(NAMCC_URL)
+
+    tables = soup.find_all("table")
+
+    print(f"Found {len(tables)} table(s)")
+
+    required_columns = [
+        "Date",
+        "Fajr Adhaan",
+        "Fajr Iqamah",
+        "Dhuhr Adhaan",
+        "Dhuhr Iqamah",
+        "Asr Adhaan",
+        "Asr Iqamah",
+        "Maghrib Adhaan",
+        "Maghrib Iqamah",
+        "Isha Adhaan",
+        "Isha Iqamah",
+    ]
+
+    for table_number, table in enumerate(tables, start=1):
 
         rows = table.find_all("tr")
 
-        print("ROW COUNT:", len(rows))
-
-        for row in rows[:15]:
-
-            cells = [
-                " ".join(cell.get_text(" ", strip=True).split())
-                for cell in row.find_all(["td", "th"])
-            ]
-
-            print(cells)
-
-    # --------------------------------------------------
-    # PRAYER WORDS
-    # --------------------------------------------------
-
-    text = " ".join(soup.stripped_strings)
-
-    print("\nPRAYER WORD SEARCH:")
-
-    for word in [
-        "Fajr",
-        "Dhuhr",
-        "Zuhr",
-        "Asr",
-        "Maghrib",
-        "Isha",
-        "Iqamah",
-        "Adhaan",
-        "Adhan",
-        "Athan",
-    ]:
-
-        matches = len(
-            re.findall(
-                re.escape(word),
-                text,
-                re.IGNORECASE
-            )
-        )
-
-        print(f"{word}: {matches}")
-
-    # --------------------------------------------------
-    # TIME STRINGS
-    # --------------------------------------------------
-
-    times = re.findall(
-        r"\b\d{1,2}:\d{2}\s*(?:AM|PM)\b",
-        text,
-        re.IGNORECASE
-    )
-
-    print("\nTIME STRINGS FOUND:", len(times))
-
-    print(times[:100])
-
-    # --------------------------------------------------
-    # SCRIPT TAGS
-    # --------------------------------------------------
-
-    scripts = soup.find_all("script")
-
-    print("\nSCRIPT TAG COUNT:", len(scripts))
-
-    for i, script in enumerate(scripts):
-
-        script_text = script.string or script.get_text()
-
-        if not script_text:
+        if not rows:
             continue
 
-        interesting = any(
-            word.lower() in script_text.lower()
-            for word in [
-                "fajr",
-                "dhuhr",
-                "zuhr",
-                "asr",
-                "maghrib",
-                "isha",
-                "iqamah",
-                "athan",
-                "prayer",
-                "api",
+        header_cells = rows[0].find_all(["th", "td"])
+
+        headers = [
+            cell.get_text(" ", strip=True)
+            for cell in header_cells
+        ]
+
+        if not all(column in headers for column in required_columns):
+            continue
+
+        print(f"Using NAMCC table #{table_number}")
+        print(f"Headers: {headers}")
+
+        header_map = {
+            header: index
+            for index, header in enumerate(headers)
+        }
+
+        for row in rows[1:]:
+            cells = row.find_all(["td", "th"])
+
+            values = [
+                cell.get_text(" ", strip=True)
+                for cell in cells
             ]
-        )
 
-        if interesting:
+            if len(values) < len(headers):
+                continue
 
-            print("\n--- INTERESTING SCRIPT", i, "---")
+            row_date = values[header_map["Date"]].strip()
 
-            print(script_text[:5000])
+            # NAMCC dates are numeric day values such as "21".
+            if row_date != TODAY_DAY:
+                continue
 
-    # --------------------------------------------------
-    # LINKS
-    # --------------------------------------------------
+            print(f"Found NAMCC date row: {values}")
 
-    print("\nLINKS CONTAINING PRAYER/TIME/MONTH:")
+            return {
+                "fajr": {
+                    "athan": normalize_time(
+                        values[header_map["Fajr Adhaan"]]
+                    ),
+                    "iqamah": normalize_time(
+                        values[header_map["Fajr Iqamah"]]
+                    )
+                },
+                "dhuhr": {
+                    "athan": normalize_time(
+                        values[header_map["Dhuhr Adhaan"]]
+                    ),
+                    "iqamah": normalize_time(
+                        values[header_map["Dhuhr Iqamah"]]
+                    )
+                },
+                "asr": {
+                    "athan": normalize_time(
+                        values[header_map["Asr Adhaan"]]
+                    ),
+                    "iqamah": normalize_time(
+                        values[header_map["Asr Iqamah"]]
+                    )
+                },
+                "maghrib": {
+                    "athan": normalize_time(
+                        values[header_map["Maghrib Adhaan"]]
+                    ),
+                    "iqamah": normalize_time(
+                        values[header_map["Maghrib Iqamah"]]
+                    )
+                },
+                "isha": {
+                    "athan": normalize_time(
+                        values[header_map["Isha Adhaan"]]
+                    ),
+                    "iqamah": normalize_time(
+                        values[header_map["Isha Iqamah"]]
+                    )
+                }
+            }
 
-    for link in soup.find_all("a", href=True):
-
-        href = link.get("href", "")
-        label = " ".join(link.stripped_strings)
-
-        combined = f"{label} {href}".lower()
-
-        if any(
-            word in combined
-            for word in [
-                "prayer",
-                "times",
-                "monthly",
-                "calendar",
-                "api",
-            ]
-        ):
-
-            print(
-                "LABEL:",
-                label,
-                "| HREF:",
-                href
-            )
+    raise RuntimeError(
+        f"NAMCC does not have a prayer-time row for day {TODAY_DAY}"
+    )
 
 
 def main():
+    print("========================================")
+    print("       MOSQUE PRAYER TIMES")
+    print("========================================")
+    print(f"Today: {TODAY.strftime('%Y-%m-%d')}")
+    print(f"Date being searched: {TODAY_MONTH_DAY}")
+    print()
 
-    print("=" * 80)
-    print("MOSQUE PRAYER TIME DIAGNOSTIC")
-    print("DATE:", TODAY)
-    print("=" * 80)
+    results = {}
 
-    for name, url in URLS.items():
+    errors = []
 
-        try:
+    try:
+        results["ICRR"] = get_icrr()
+    except Exception as e:
+        print(f"ICRR ERROR: {e}")
+        errors.append(f"ICRR: {e}")
 
-            html = get_page(name, url)
+    try:
+        results["NAMCC"] = get_namcc()
+    except Exception as e:
+        print(f"NAMCC ERROR: {e}")
+        errors.append(f"NAMCC: {e}")
 
-            inspect_page(name, html)
+    print("\n========================================")
+    print("FINAL JSON")
+    print("========================================")
 
-        except Exception as e:
+    print(json.dumps(results, indent=2))
 
-            print("\nERROR:", repr(e))
+    if errors:
+        print("\n========================================")
+        print("ERRORS")
+        print("========================================")
 
-    print("\n" + "=" * 80)
-    print("DIAGNOSTIC COMPLETE")
-    print("=" * 80)
+        for error in errors:
+            print(error)
+
+        sys.exit(1)
+
+    print("\n========================================")
+    print("SUCCESS")
+    print("========================================")
 
 
 if __name__ == "__main__":
