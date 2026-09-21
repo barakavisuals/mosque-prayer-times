@@ -215,9 +215,7 @@ def get_icp():
             "Version/18.5 Safari/605.1.15"
         ),
         "Accept": "application/json, text/plain, */*",
-        "Referer": (
-            "https://www.masjidiapp.com/"
-        ),
+        "Referer": "https://www.masjidiapp.com/",
         "Origin": "https://www.masjidiapp.com",
     }
 
@@ -240,10 +238,23 @@ def get_icp():
 
     for entry in data.get("iqamaTimes", []):
 
-        entry_date = entry["date"]["date"][:10]
+        raw_date = entry.get("date")
+
+        if isinstance(raw_date, dict):
+            raw_date = raw_date.get("date", "")
+
+        raw_date = str(raw_date)
+
+        # The API may return dates in formats such as:
+        # 2026-09-21
+        # 2026-09-21 00:00:00
+        # 2026-09-21T00:00:00
+        entry_date = raw_date[:10]
 
         if entry_date != today:
             continue
+
+        print("ICP matched date:", raw_date)
 
         return {
             "fajr": {
@@ -260,7 +271,7 @@ def get_icp():
             },
             "maghrib": {
                 "athan": parse_time(entry["magrib_start_time"]),
-                "iqamah": parse_time(entry["magrib_iqama_time"]),
+                "iqamah": parse_time(entry["maghrib_iqama_time"]),
             },
             "isha": {
                 "athan": parse_time(entry["isha_start_time"]),
