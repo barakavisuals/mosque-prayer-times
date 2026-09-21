@@ -1,0 +1,47 @@
+{
+  "date": "2026-09-21",
+  "NAMCC": {
+    "fajr": {
+      "athan": "06:14",
+      "iqamah": "06:30"
+    },
+    "dhuhr": {
+      "athan": "13:25",
+      "iqamah": "14:00"
+    },
+    "asr": {
+      "athan": "16:52",
+      "iqamah": "17:15"
+    },
+    "maghrib": {
+      "athan": "19:29",
+      "iqamah": "19:34"
+    },
+    "isha": {
+      "athan": "20:35",
+      "iqamah": "21:00"
+    }
+  },
+  "ICRR": {
+    "fajr": {
+      "athan": "06:12",
+      "iqamah": "06:32"
+    },
+    "dhuhr": {
+      "athan": "13:25",
+      "iqamah": "13:40"
+    },
+    "asr": {
+      "athan": "17:45",
+      "iqamah": "18:00"
+    },
+    "maghrib": {
+      "athan": "19:28",
+      "iqamah": "19:33"
+    },
+    "isha": {
+      "athan": "20:34",
+      "iqamah": "20:49"
+    }
+  }
+}
