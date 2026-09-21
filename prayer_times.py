@@ -242,19 +242,25 @@ def main():
     print("========================================")
     print("FINAL JSON")
     print("========================================")
-
+    
     result = {
         "date": today.strftime("%Y-%m-%d"),
         "NAMCC": results.get("NAMCC"),
         "ICRR": results.get("ICRR"),
     }
-
-    print(
-        json.dumps(
-            result,
-            indent=2
-        )
+    
+    json_output = json.dumps(
+        result,
+        indent=2
     )
+    
+    print(json_output)
+    
+    with open("prayer_times.json", "w") as file:
+        file.write(json_output)
+    
+    print()
+    print("Saved prayer times to prayer_times.json")
 
 
 if __name__ == "__main__":
