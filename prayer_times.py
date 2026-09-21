@@ -6,64 +6,156 @@ import sys
 import re
 
 
-ICRR_URL = "https://roundrockmasjid.org/"
-NAMCC_URL = "https://namcc.org/monthly-prayer-times/"
-
-
-def get_soup(url):
-    response = requests.get(
-        url,
-        timeout=30,
-        headers={
-            "User-Agent": "Mozilla/5.0 (Prayer Times Automation)"
-        }
-    )
-    response.raise_for_status()
-    return BeautifulSoup(response.text, "html.parser")
-
-
-def normalize_time(value):
-    value = value.strip()
-
-    for fmt in ("%I:%M %p", "%I:%M%p", "%H:%M"):
-        try:
-            return datetime.strptime(value, fmt).strftime("%H:%M")
-        except ValueError:
-            pass
-
-    raise ValueError(f"Could not understand time: {value}")
+def parse_time(value):
+    """Convert 12-hour time such as '06:14 AM' to HH:MM."""
+    return datetime.strptime(value.strip(), "%I:%M %p").strftime("%H:%M")
 
 
 def get_namcc():
-    print("\n=== NAMCC ===")
+    url = "https://namcc.org/prayer-times"
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
 
-    today = datetime.now()
-    target_date = today.strftime("%d %b")
+    soup = BeautifulSoup(response.text, "html.parser")
 
-    print(f"Looking for: {target_date}")
-
-    soup = get_soup(NAMCC_URL)
+    today = datetime.now().strftime("%d %b")
     tables = soup.find_all("table")
 
-    print(f"Found {len(tables)} table(s)")
-
-    required_columns = [
-        "Date",
-        "Fajr Adhaan",
-        "Fajr Iqamah",
-        "Dhuhr Adhaan",
-        "Dhuhr Iqamah",
-        "Asr Adhaan",
-        "Asr Iqamah",
-        "Maghrib Adhaan",
-        "Maghrib Iqamah",
-        "Isha Adhaan",
-        "Isha Iqamah",
-    ]
-
-    for table_number, table in enumerate(tables, start=1):
-
+    for table in tables:
         rows = table.find_all("tr")
+
+        for row in rows:
+            cells = [c.get_text(" ", strip=True) for c in row.find_all(["th", "td"])]
+
+            if not cells:
+                continue
+
+            if cells[0] == today and len(cells) >= 13:
+                return {
+                    "fajr": {
+                        "athan": parse_time(cells[2]),
+                        "iqamah": parse_time(cells[3]),
+                    },
+                    "dhuhr": {
+                        "athan": parse_time(cells[5]),
+                        "iqamah": parse_time(cells[6]),
+                    },
+                    "asr": {
+                        "athan": parse_time(cells[7]),
+                        "iqamah": parse_time(cells[8]),
+                    },
+                    "maghrib": {
+                        "athan": parse_time(cells[9]),
+                        "iqamah": parse_time(cells[10]),
+                    },
+                    "isha": {
+                        "athan": parse_time(cells[11]),
+                        "iqamah": parse_time(cells[12]),
+                    },
+                }
+
+    raise RuntimeError(f"NAMCC: could not find today's row ({today})")
+
+
+def get_icrr():
+    """
+    ICRR schedule is published through Our Masajid.
+    """
+    url = "https://ourmasajid.com/m/icrr/prayer-times"
+
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    # Look through tables for today's row.
+    for table in soup.find_all("table"):
+        for row in table.find_all("tr"):
+            cells = [
+                c.get_text(" ", strip=True)
+                for c in row.find_all(["th", "td"])
+            ]
+
+            if not cells:
+                continue
+
+            text = " ".join(cells)
+
+            # Look for today's date in several possible formats.
+            if (
+                datetime.now().strftime("%b %-d") in text
+                or datetime.now().strftime("%B %-d") in text
+                or datetime.now().strftime("%m/%d/%Y") in text
+                or today in text
+            ):
+                times = re.findall(
+                    r"\d{1,2}:\d{2}\s*(?:AM|PM)",
+                    text,
+                    re.IGNORECASE,
+                )
+
+                if len(times) >= 10:
+                    return {
+                        "fajr": {
+                            "athan": parse_time(times[0]),
+                            "iqamah": parse_time(times[1]),
+                        },
+                        "dhuhr": {
+                            "athan": parse_time(times[2]),
+                            "iqamah": parse_time(times[3]),
+                        },
+                        "asr": {
+                            "athan": parse_time(times[4]),
+                            "iqamah": parse_time(times[5]),
+                        },
+                        "maghrib": {
+                            "athan": parse_time(times[6]),
+                            "iqamah": parse_time(times[7]),
+                        },
+                        "isha": {
+                            "athan": parse_time(times[8]),
+                            "iqamah": parse_time(times[9]),
+                        },
+                    }
+
+    # If the page structure changes, print useful diagnostic information.
+    raise RuntimeError("ICRR: could not find today's prayer times")
+
+
+def main():
+    print("=== MOSQUE PRAYER TIMES ===")
+    print("Date:", datetime.now().strftime("%Y-%m-%d"))
+    print()
+
+    namcc = get_namcc()
+    icrr = get_icrr()
+
+    print("=== NAMCC ===")
+    print(json.dumps(namcc, indent=2))
+    print()
+
+    print("=== ICRR ===")
+    print(json.dumps(icrr, indent=2))
+    print()
+
+    result = {
+        "date": datetime.now().strftime("%Y-%m-%d"),
+        "NAMCC": namcc,
+        "ICRR": icrr,
+    }
+
+    print("=== FINAL JSON ===")
+    print(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        print("ERROR:", e)
+        sys.exit(1)        rows = table.find_all("tr")
 
         if not rows:
             continue
