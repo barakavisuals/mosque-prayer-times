@@ -14,7 +14,7 @@ def parse_time(value):
 
 
 def get_namcc():
-    url = "https://namcc.org/prayer-times"
+    url = "https://namcc.org/monthly-prayer-times/"
 
     response = requests.get(
         url,
