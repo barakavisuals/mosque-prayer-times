@@ -208,8 +208,27 @@ def get_icp():
         f"{now.year}/{now.month}"
     )
 
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) "
+            "Version/18.5 Safari/605.1.15"
+        ),
+        "Accept": "application/json, text/plain, */*",
+        "Referer": (
+            "https://www.masjidiapp.com/"
+        ),
+        "Origin": "https://www.masjidiapp.com",
+    }
+
+    params = {
+        "XDEBUG_SESSION_START": "PHPSTORM"
+    }
+
     response = requests.get(
         url,
+        headers=headers,
+        params=params,
         timeout=30
     )
 
