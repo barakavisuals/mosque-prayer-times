@@ -31,3 +31,11 @@ jobs:
         with:
           name: prayer-times
           path: prayer_times.json
+
+      - name: Commit updated prayer times
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add prayer_times.json
+          git diff --cached --quiet || git commit -m "Update prayer times"
+          git push
