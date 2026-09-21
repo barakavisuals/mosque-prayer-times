@@ -20,50 +20,32 @@ def get_soup(url):
             "User-Agent": "Mozilla/5.0 (Prayer Times Automation)"
         }
     )
-
     response.raise_for_status()
-
     return BeautifulSoup(response.text, "html.parser")
 
 
 def normalize_time(value):
     value = value.strip()
 
-    formats = [
-        "%I:%M %p",
-        "%I:%M%p",
-        "%H:%M",
-    ]
-
-    for fmt in formats:
+    for fmt in ("%I:%M %p", "%I:%M%p", "%H:%M"):
         try:
             return datetime.strptime(value, fmt).strftime("%H:%M")
         except ValueError:
-            pass
+            continue
 
     raise ValueError(f"Could not understand time: {value}")
 
 
-def get_icrr():
-    print("\n=== ICRR ===")
-    print("Looking for today's prayer times on ICRR homepage")
+def get_namcc():
+    print("\n=== NAMCC ===")
 
-    soup = get_soup(ICRR_URL)
+    target_date = TODAY.strftime("%d %b")
+    print(f"Looking for today's date: {target_date}")
 
-    text = soup.get_text(" ", strip=True)
+    soup = get_soup(NAMCC_URL)
+    tables = soup.find_all("table")
 
-    print(f"Page title: {soup.title.get_text(strip=True) if soup.title else 'Unknown'}")
-
-    # Look for the prayer names in the page text.
-    prayer_names = [
-        "Fajr",
-        "Sunrise",
-        "Zuhr",
-        "Asr",
-        "Maghrib",
-        "Isha",
-    ]
-
+    print
     # Search tables first.
     tables = soup.find_all("table")
 
