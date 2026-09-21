@@ -9,12 +9,14 @@ permissions:
   contents: write
 
 jobs:
-  test:
+  update:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -42,7 +44,14 @@ jobs:
 
           git add prayer_times.json
 
-          git diff --cached --quiet || git commit -m "Update prayer times"
+          if git diff --cached --quiet; then
+            echo "No prayer time changes to commit."
+            exit 0
+          fi
 
-          git pull --rebase origin main
-          git push
+          git commit -m "Update prayer times"
+
+          git fetch origin main
+          git rebase origin/main
+
+          git push origin HEAD:main
