@@ -24,16 +24,24 @@ def parse_time(value):
 
     value = str(value).strip().upper()
 
-    # Remove seconds if present
-    value = re.sub(r"(\d{1,2}:\d{2}):\d{2}", r"\1", value)
+    value = re.sub(
+        r"(\d{1,2}:\d{2}):\d{2}",
+        r"\1",
+        value
+    )
 
     for fmt in ("%I:%M %p", "%H:%M"):
         try:
-            return datetime.strptime(value, fmt).strftime("%H:%M")
+            return datetime.strptime(
+                value,
+                fmt
+            ).strftime("%H:%M")
         except ValueError:
             pass
 
-    raise ValueError(f"Could not parse time: {value}")
+    raise ValueError(
+        f"Could not parse time: {value}"
+    )
 
 
 def extract_times(text):
@@ -48,22 +56,34 @@ def extract_times(text):
 
 
 def normalize_key(value):
-    """Normalize JSON/table field names for easier matching."""
-    return re.sub(r"[^a-z0-9]", "", str(value).lower())
+    """Normalize JSON/table field names."""
+    return re.sub(
+        r"[^a-z0-9]",
+        "",
+        str(value).lower()
+    )
 
 
-def parse_date_value(value, default_year=None, default_month=None):
-    """
-    Try to convert many possible date formats into a Python date.
-    Used primarily for the ICP API.
-    """
+def parse_date_value(
+    value,
+    default_year=None,
+    default_month=None
+):
+    """Convert common date formats into a Python date."""
 
     if value is None:
         return None
 
     if isinstance(value, dict):
-        for key in ("date", "value", "datetime"):
+
+        for key in (
+            "date",
+            "value",
+            "datetime"
+        ):
+
             if key in value:
+
                 result = parse_date_value(
                     value[key],
                     default_year,
@@ -84,6 +104,7 @@ def parse_date_value(value, default_year=None, default_month=None):
     )
 
     if match:
+
         try:
             return date(
                 int(match.group(1)),
@@ -100,6 +121,7 @@ def parse_date_value(value, default_year=None, default_month=None):
     )
 
     if match:
+
         try:
             return date(
                 int(match.group(3)),
@@ -116,6 +138,7 @@ def parse_date_value(value, default_year=None, default_month=None):
     )
 
     if match:
+
         try:
             return date(
                 int(match.group(1)),
@@ -127,9 +150,15 @@ def parse_date_value(value, default_year=None, default_month=None):
 
     # September 21 / Sep 21
     if default_year:
+
         for fmt in ("%B %d", "%b %d"):
+
             try:
-                parsed = datetime.strptime(text, fmt)
+
+                parsed = datetime.strptime(
+                    text,
+                    fmt
+                )
 
                 return date(
                     default_year,
@@ -143,10 +172,12 @@ def parse_date_value(value, default_year=None, default_month=None):
     return None
 
 
-def find_date_in_entry(entry, year, month):
-    """
-    Search a JSON object for its date.
-    """
+def find_date_in_entry(
+    entry,
+    year,
+    month
+):
+    """Search a JSON object for its date."""
 
     if not isinstance(entry, dict):
         return None
@@ -164,7 +195,10 @@ def find_date_in_entry(entry, year, month):
 
         for key, value in entry.items():
 
-            if normalize_key(key) == normalize_key(preferred):
+            if (
+                normalize_key(key)
+                == normalize_key(preferred)
+            ):
 
                 parsed = parse_date_value(
                     value,
@@ -175,7 +209,6 @@ def find_date_in_entry(entry, year, month):
                 if parsed:
                     return parsed
 
-    # Fallback: inspect all values.
     for value in entry.values():
 
         parsed = parse_date_value(
@@ -190,11 +223,14 @@ def find_date_in_entry(entry, year, month):
     return None
 
 
-def find_prayer_time(entry, aliases):
+def find_prayer_time(
+    entry,
+    aliases
+):
     """
-    Find a prayer's Athan/start time in a JSON entry.
+    Find a prayer's Athan/start time.
 
-    Iqamah, sunrise and sunset fields are ignored.
+    Iqamah, sunrise, and sunset fields are ignored.
     """
 
     if not isinstance(entry, dict):
@@ -206,7 +242,10 @@ def find_prayer_time(entry, aliases):
 
         normalized = normalize_key(key)
 
-        if not any(alias in normalized for alias in aliases):
+        if not any(
+            alias in normalized
+            for alias in aliases
+        ):
             continue
 
         if "iqama" in normalized:
@@ -218,11 +257,21 @@ def find_prayer_time(entry, aliases):
         if "sunset" in normalized:
             continue
 
-        try:
-            parsed = parse_time(value)
-            candidates.append((key, parsed))
+        if "shuruq" in normalized:
+            continue
 
-        except (ValueError, TypeError):
+        try:
+
+            parsed = parse_time(value)
+
+            candidates.append(
+                (key, parsed)
+            )
+
+        except (
+            ValueError,
+            TypeError
+        ):
             continue
 
     if candidates:
@@ -231,12 +280,13 @@ def find_prayer_time(entry, aliases):
     return None
 
 
-def find_named_time(entry, aliases):
+def find_named_time(
+    entry,
+    aliases
+):
     """
-    Find a named time such as Sunrise in a JSON entry.
-
-    Unlike find_prayer_time(), this function does NOT exclude
-    sunrise fields.
+    Find a named time such as Sunrise/Shuruq
+    in a JSON entry.
     """
 
     if not isinstance(entry, dict):
@@ -246,22 +296,29 @@ def find_named_time(entry, aliases):
 
         normalized = normalize_key(key)
 
-        if not any(alias in normalized for alias in aliases):
+        if not any(
+            alias in normalized
+            for alias in aliases
+        ):
             continue
 
         try:
             return parse_time(value)
 
-        except (ValueError, TypeError):
+        except (
+            ValueError,
+            TypeError
+        ):
             continue
 
     return None
 
 
-def find_iqama_time(entry, aliases):
-    """
-    Find an Iqamah time in an ICP iqama schedule entry.
-    """
+def find_iqama_time(
+    entry,
+    aliases
+):
+    """Find an Iqamah time in an ICP schedule entry."""
 
     if not isinstance(entry, dict):
         return None
@@ -273,13 +330,19 @@ def find_iqama_time(entry, aliases):
         if "iqama" not in normalized:
             continue
 
-        if not any(alias in normalized for alias in aliases):
+        if not any(
+            alias in normalized
+            for alias in aliases
+        ):
             continue
 
         try:
             return parse_time(value)
 
-        except (ValueError, TypeError):
+        except (
+            ValueError,
+            TypeError
+        ):
             continue
 
     return None
@@ -293,7 +356,9 @@ def get_namcc():
 
     now = get_today()
 
-    url = "https://namcc.org/monthly-prayer-times/"
+    url = (
+        "https://namcc.org/monthly-prayer-times/"
+    )
 
     response = requests.get(
         url,
@@ -320,7 +385,10 @@ def get_namcc():
             continue
 
         headers = [
-            cell.get_text(" ", strip=True).lower()
+            cell.get_text(
+                " ",
+                strip=True
+            ).lower()
             for cell in rows[0].find_all(
                 ["th", "td"]
             )
@@ -346,7 +414,10 @@ def get_namcc():
         for row in rows[1:]:
 
             cells = [
-                cell.get_text(" ", strip=True)
+                cell.get_text(
+                    " ",
+                    strip=True
+                )
                 for cell in row.find_all(
                     ["th", "td"]
                 )
@@ -369,7 +440,9 @@ def get_namcc():
             ):
                 continue
 
-            def get_column(*possible_names):
+            def get_column(
+                *possible_names
+            ):
 
                 for name in possible_names:
 
@@ -380,7 +453,9 @@ def get_namcc():
 
                 return None
 
-            sunrise = get_column("sunrise")
+            sunrise = get_column(
+                "sunrise"
+            )
 
             if sunrise is None:
                 raise RuntimeError(
@@ -388,7 +463,9 @@ def get_namcc():
                 )
 
             return {
-                "sunrise": parse_time(sunrise),
+                "sunrise": parse_time(
+                    sunrise
+                ),
 
                 "fajr": {
                     "athan": parse_time(
@@ -474,7 +551,9 @@ def get_icrr():
 
     now = get_today()
 
-    url = "https://ourmasajid.com/m/icrr/prayer-times"
+    url = (
+        "https://ourmasajid.com/m/icrr/prayer-times"
+    )
 
     response = requests.get(
         url,
@@ -501,7 +580,10 @@ def get_icrr():
             continue
 
         headers = [
-            cell.get_text(" ", strip=True).lower()
+            cell.get_text(
+                " ",
+                strip=True
+            ).lower()
             for cell in rows[0].find_all(
                 ["th", "td"]
             )
@@ -528,7 +610,10 @@ def get_icrr():
         for row in rows[1:]:
 
             cells = [
-                cell.get_text(" ", strip=True)
+                cell.get_text(
+                    " ",
+                    strip=True
+                )
                 for cell in row.find_all(
                     ["th", "td"]
                 )
@@ -551,8 +636,6 @@ def get_icrr():
             ):
                 continue
 
-            # Columns:
-            #
             # Date
             # Fajr
             # Sunrise
@@ -561,13 +644,29 @@ def get_icrr():
             # Maghrib
             # Isha
 
-            sunrise_times = extract_times(cells[2])
+            sunrise_times = extract_times(
+                cells[2]
+            )
 
-            fajr_times = extract_times(cells[1])
-            dhuhr_times = extract_times(cells[3])
-            asr_times = extract_times(cells[4])
-            maghrib_times = extract_times(cells[5])
-            isha_times = extract_times(cells[6])
+            fajr_times = extract_times(
+                cells[1]
+            )
+
+            dhuhr_times = extract_times(
+                cells[3]
+            )
+
+            asr_times = extract_times(
+                cells[4]
+            )
+
+            maghrib_times = extract_times(
+                cells[5]
+            )
+
+            isha_times = extract_times(
+                cells[6]
+            )
 
             if not sunrise_times:
                 raise RuntimeError(
@@ -581,6 +680,7 @@ def get_icrr():
                 len(maghrib_times) >= 2,
                 len(isha_times) >= 2,
             ]):
+
                 raise RuntimeError(
                     "ICRR: found today's row but could not "
                     "parse all Athan/Iqamah times"
@@ -665,9 +765,15 @@ def get_icp():
             "AppleWebKit/605.1.15 (KHTML, like Gecko) "
             "Version/18.5 Safari/605.1.15"
         ),
-        "Accept": "application/json, text/plain, */*",
-        "Referer": "https://www.masjidiapp.com/",
-        "Origin": "https://www.masjidiapp.com",
+        "Accept": (
+            "application/json, text/plain, */*"
+        ),
+        "Referer": (
+            "https://www.masjidiapp.com/"
+        ),
+        "Origin": (
+            "https://www.masjidiapp.com"
+        ),
     }
 
     params = {
@@ -699,6 +805,7 @@ def get_icp():
         prayer_times,
         list
     ):
+
         raise RuntimeError(
             "ICP: prayerTimes was not returned as a list"
         )
@@ -789,11 +896,16 @@ def get_icp():
 
     # --------------------------------------------------------
     # Extract DAILY Sunrise.
+    #
+    # ICP calls this field "shuruq".
     # --------------------------------------------------------
 
     sunrise = find_named_time(
         daily_entry,
-        ["sunrise"]
+        [
+            "sunrise",
+            "shuruq"
+        ]
     )
 
     if sunrise is None:
@@ -808,7 +920,7 @@ def get_icp():
         )
 
         raise RuntimeError(
-            "ICP: could not extract Sunrise"
+            "ICP: could not extract Sunrise/Shuruq"
         )
 
     athan_times = {
@@ -857,6 +969,7 @@ def get_icp():
         iqama_times,
         list
     ):
+
         raise RuntimeError(
             "ICP: iqamaTimes was not returned as a list"
         )
@@ -878,12 +991,15 @@ def get_icp():
         ):
             continue
 
-        raw_date = entry.get("date")
+        raw_date = entry.get(
+            "date"
+        )
 
         if isinstance(
             raw_date,
             dict
         ):
+
             raw_date = raw_date.get(
                 "date",
                 raw_date.get(
@@ -994,11 +1110,12 @@ def get_icp():
 
     # --------------------------------------------------------
     # STEP 4:
-    # Combine DAILY Athan + Sunrise with the EFFECTIVE
-    # Iqamah schedule.
+    # Combine DAILY Athan + Sunrise with the
+    # EFFECTIVE Iqamah schedule.
     # --------------------------------------------------------
 
     result = {
+
         "sunrise": sunrise,
 
         "fajr": {
@@ -1126,6 +1243,7 @@ def main():
     # --------------------------------------------------------
 
     output = {
+
         "date": now.strftime(
             "%Y-%m-%d"
         ),
