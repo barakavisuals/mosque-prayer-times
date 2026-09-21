@@ -395,7 +395,7 @@ def get_namcc():
         ]
 
         if not any(
-            "fajr" in header
+            "Fajr" in header
             for header in headers
         ):
             continue
@@ -467,16 +467,16 @@ def get_namcc():
                     sunrise
                 ),
 
-                "fajr": {
+                "Fajr": {
                     "athan": parse_time(
                         get_column(
-                            "fajr adhaan",
-                            "fajr athan"
+                            "Fajr adhaan",
+                            "Fajr athan"
                         )
                     ),
                     "iqamah": parse_time(
                         get_column(
-                            "fajr iqamah"
+                            "Fajr iqamah"
                         )
                     ),
                 },
@@ -591,7 +591,7 @@ def get_icrr():
 
         required_headers = [
             "date",
-            "fajr",
+            "Fajr",
             "dhuhr",
             "asr",
             "maghrib",
@@ -648,7 +648,7 @@ def get_icrr():
                 cells[2]
             )
 
-            fajr_times = extract_times(
+            Fajr_times = extract_times(
                 cells[1]
             )
 
@@ -674,7 +674,7 @@ def get_icrr():
                 )
 
             if not all([
-                len(fajr_times) >= 2,
+                len(Fajr_times) >= 2,
                 len(dhuhr_times) >= 2,
                 len(asr_times) >= 2,
                 len(maghrib_times) >= 2,
@@ -691,12 +691,12 @@ def get_icrr():
                     sunrise_times[0]
                 ),
 
-                "fajr": {
+                "Fajr": {
                     "athan": parse_time(
-                        fajr_times[0]
+                        Fajr_times[0]
                     ),
                     "iqamah": parse_time(
-                        fajr_times[1]
+                        Fajr_times[1]
                     ),
                 },
 
@@ -869,9 +869,9 @@ def get_icp():
     # Extract DAILY Athan times.
     # --------------------------------------------------------
 
-    fajr_athan = find_prayer_time(
+    Fajr_athan = find_prayer_time(
         daily_entry,
-        ["fajr"]
+        ["Fajr"]
     )
 
     dhuhr_athan = find_prayer_time(
@@ -924,7 +924,7 @@ def get_icp():
         )
 
     athan_times = {
-        "fajr": fajr_athan,
+        "Fajr": Fajr_athan,
         "dhuhr": dhuhr_athan,
         "asr": asr_athan,
         "maghrib": maghrib_athan,
@@ -1052,9 +1052,9 @@ def get_icp():
     # Extract Iqamah times.
     # --------------------------------------------------------
 
-    fajr_iqamah = find_iqama_time(
+    Fajr_iqamah = find_iqama_time(
         selected_iqama_entry,
-        ["fajr"]
+        ["Fajr"]
     )
 
     dhuhr_iqamah = find_iqama_time(
@@ -1078,7 +1078,7 @@ def get_icp():
     )
 
     iqamah_times_result = {
-        "fajr": fajr_iqamah,
+        "Fajr": Fajr_iqamah,
         "dhuhr": dhuhr_iqamah,
         "asr": asr_iqamah,
         "maghrib": maghrib_iqamah,
@@ -1118,9 +1118,9 @@ def get_icp():
 
         "sunrise": sunrise,
 
-        "fajr": {
-            "athan": fajr_athan,
-            "iqamah": fajr_iqamah,
+        "Fajr": {
+            "athan": Fajr_athan,
+            "iqamah": Fajr_iqamah,
         },
 
         "dhuhr": {
