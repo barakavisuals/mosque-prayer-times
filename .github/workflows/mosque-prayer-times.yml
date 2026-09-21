@@ -2,6 +2,8 @@ name: Test Prayer Times
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
 
 jobs:
   test:
