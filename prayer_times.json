@@ -44,5 +44,26 @@
       "iqamah": "20:49"
     }
   },
-  "ICP": null
+  "ICP": {
+    "fajr": {
+      "athan": "05:58",
+      "iqamah": "06:30"
+    },
+    "dhuhr": {
+      "athan": "13:24",
+      "iqamah": "14:00"
+    },
+    "asr": {
+      "athan": "17:45",
+      "iqamah": "18:15"
+    },
+    "maghrib": {
+      "athan": "19:31",
+      "iqamah": "19:35"
+    },
+    "isha": {
+      "athan": "20:48",
+      "iqamah": "21:00"
+    }
+  }
 }
