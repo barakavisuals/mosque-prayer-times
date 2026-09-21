@@ -76,9 +76,18 @@ def get_namcc():
     )
 
 
+```python
 def get_icrr():
     """
-    ICRR schedule is published through Our Masajid.
+    ICRR prayer times are published through Our Masajid.
+
+    Table structure:
+    Fajr Adhan, Fajr Iqamah,
+    Sunrise,
+    Dhuhr Adhan, Dhuhr Iqamah,
+    Asr Adhan, Asr Iqamah,
+    Maghrib Adhan, Maghrib Iqamah,
+    Isha Adhan, Isha Iqamah
     """
 
     url = "https://ourmasajid.com/m/icrr/prayer-times"
@@ -132,7 +141,20 @@ def get_icrr():
                 re.IGNORECASE
             )
 
-            if len(times) >= 10:
+            # ICRR has 11 times:
+            # 0 = Fajr Adhan
+            # 1 = Fajr Iqamah
+            # 2 = Sunrise
+            # 3 = Dhuhr Adhan
+            # 4 = Dhuhr Iqamah
+            # 5 = Asr Adhan
+            # 6 = Asr Iqamah
+            # 7 = Maghrib Adhan
+            # 8 = Maghrib Iqamah
+            # 9 = Isha Adhan
+            # 10 = Isha Iqamah
+
+            if len(times) >= 11:
 
                 return {
                     "fajr": {
@@ -140,20 +162,20 @@ def get_icrr():
                         "iqamah": parse_time(times[1]),
                     },
                     "dhuhr": {
-                        "athan": parse_time(times[2]),
-                        "iqamah": parse_time(times[3]),
+                        "athan": parse_time(times[3]),
+                        "iqamah": parse_time(times[4]),
                     },
                     "asr": {
-                        "athan": parse_time(times[4]),
-                        "iqamah": parse_time(times[5]),
+                        "athan": parse_time(times[5]),
+                        "iqamah": parse_time(times[6]),
                     },
                     "maghrib": {
-                        "athan": parse_time(times[6]),
-                        "iqamah": parse_time(times[7]),
+                        "athan": parse_time(times[7]),
+                        "iqamah": parse_time(times[8]),
                     },
                     "isha": {
-                        "athan": parse_time(times[8]),
-                        "iqamah": parse_time(times[9]),
+                        "athan": parse_time(times[9]),
+                        "iqamah": parse_time(times[10]),
                     },
                 }
 
