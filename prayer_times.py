@@ -2,12 +2,6 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 import re
-import json
-import sys
-
-# --------------------------------------------------
-# SETTINGS
-# --------------------------------------------------
 
 TODAY = datetime.now().strftime("%Y-%m-%d")
 
@@ -15,8 +9,6 @@ URLS = {
     "ICRR": "https://roundrockmasjid.org/prayer-times",
     "NAMCC": "https://namcc.org/monthly-prayer-times/",
 }
-
-PRAYERS = ["fajr", "dhuhr", "asr", "maghrib", "isha"]
 
 HEADERS = {
     "User-Agent": (
@@ -27,355 +19,202 @@ HEADERS = {
 }
 
 
-# --------------------------------------------------
-# HELPERS
-# --------------------------------------------------
-
-def clean(text):
-    return " ".join(text.split())
-
-
-def time_to_24h(time_string):
-    """Convert 5:45 AM / 05:45 AM / 5:45AM -> 05:45"""
-
-    if not time_string:
-        return None
-
-    time_string = clean(time_string).upper()
-
-    for fmt in ("%I:%M %p", "%I:%M%p"):
-        try:
-            return datetime.strptime(time_string, fmt).strftime("%H:%M")
-        except ValueError:
-            pass
-
-    return None
-
-
-def get_page(url):
-    print(f"Fetching: {url}")
+def get_page(name, url):
+    print("\n" + "=" * 80)
+    print(f"{name} - FETCH")
+    print("=" * 80)
 
     response = requests.get(
         url,
         timeout=30,
-        headers=HEADERS,
+        headers=HEADERS
     )
 
-    print(f"HTTP status: {response.status_code}")
+    print("URL:", url)
+    print("HTTP STATUS:", response.status_code)
+    print("CONTENT TYPE:", response.headers.get("content-type"))
+    print("CONTENT LENGTH:", len(response.text))
 
     response.raise_for_status()
 
-    return BeautifulSoup(response.text, "html.parser")
+    return response.text
 
 
-def find_time_strings(text):
-    """
-    Find all normal AM/PM times in a piece of text.
-    """
+def inspect_page(name, html):
+    print("\n" + "=" * 80)
+    print(f"{name} - PAGE INSPECTION")
+    print("=" * 80)
 
-    pattern = r"\b\d{1,2}:\d{2}\s*(?:AM|PM)\b"
-
-    return re.findall(
-        pattern,
-        text,
-        flags=re.IGNORECASE
-    )
-
-
-def normalize_prayer_name(name):
-    name = clean(name).lower()
-
-    aliases = {
-        "fajr": "fajr",
-        "zuhr": "dhuhr",
-        "dhuhr": "dhuhr",
-        "zuhur": "dhuhr",
-        "asr": "asr",
-        "maghrib": "maghrib",
-        "isha": "isha",
-        "eshaa": "isha",
-    }
-
-    return aliases.get(name)
-
-
-# --------------------------------------------------
-# ICRR
-# --------------------------------------------------
-
-def get_icrr():
-
-    soup = get_page(URLS["ICRR"])
-
-    prayers = {}
-
-    # Look through table rows first
-    for table in soup.find_all("table"):
-
-        for row in table.find_all("tr"):
-
-            cells = [
-                clean(cell.get_text(" ", strip=True))
-                for cell in row.find_all(["td", "th"])
-            ]
-
-            if not cells:
-                continue
-
-            row_text = " ".join(cells)
-
-            prayer = None
-
-            for possible_prayer in PRAYERS:
-
-                if re.search(
-                    rf"\b{possible_prayer}\b",
-                    row_text,
-                    re.IGNORECASE
-                ):
-                    prayer = possible_prayer
-                    break
-
-            # Handle Zuhr/Dhuhr
-            if re.search(r"\b(?:zuhr|dhuhr)\b", row_text, re.IGNORECASE):
-                prayer = "dhuhr"
-
-            if not prayer:
-                continue
-
-            times = find_time_strings(row_text)
-
-            if len(times) >= 2:
-
-                prayers[prayer] = {
-                    "athan": time_to_24h(times[0]),
-                    "iqamah": time_to_24h(times[1]),
-                }
-
-    # Fallback: inspect page text
-    if len(prayers) < 5:
-
-        text = clean(soup.get_text(" ", strip=True))
-
-        patterns = {
-            "fajr": r"Fajr.*?(\d{1,2}:\d{2}\s*[AP]M).*?(\d{1,2}:\d{2}\s*[AP]M)",
-            "dhuhr": r"(?:Dhuhr|Zuhr).*?(\d{1,2}:\d{2}\s*[AP]M).*?(\d{1,2}:\d{2}\s*[AP]M)",
-            "asr": r"Asr.*?(\d{1,2}:\d{2}\s*[AP]M).*?(\d{1,2}:\d{2}\s*[AP]M)",
-            "maghrib": r"Maghrib.*?(\d{1,2}:\d{2}\s*[AP]M).*?(\d{1,2}:\d{2}\s*[AP]M)",
-            "isha": r"Isha.*?(\d{1,2}:\d{2}\s*[AP]M).*?(\d{1,2}:\d{2}\s*[AP]M)",
-        }
-
-        for prayer, pattern in patterns.items():
-
-            match = re.search(
-                pattern,
-                text,
-                re.IGNORECASE
-            )
-
-            if match:
-
-                athan = time_to_24h(match.group(1))
-                iqamah = time_to_24h(match.group(2))
-
-                if athan and iqamah:
-
-                    prayers[prayer] = {
-                        "athan": athan,
-                        "iqamah": iqamah,
-                    }
-
-    return prayers
-
-
-# --------------------------------------------------
-# NAMCC
-# --------------------------------------------------
-
-def get_namcc():
-
-    soup = get_page(URLS["NAMCC"])
-
-    prayers = {}
+    soup = BeautifulSoup(html, "html.parser")
 
     # --------------------------------------------------
-    # Find tables
+    # TITLE
     # --------------------------------------------------
 
-    for table in soup.find_all("table"):
+    print("\nPAGE TITLE:")
+    print(soup.title.get_text(" ", strip=True) if soup.title else "NO TITLE")
+
+    # --------------------------------------------------
+    # TABLES
+    # --------------------------------------------------
+
+    tables = soup.find_all("table")
+
+    print("\nTABLE COUNT:", len(tables))
+
+    for i, table in enumerate(tables, 1):
+
+        print("\n--- TABLE", i, "---")
 
         rows = table.find_all("tr")
 
-        for row in rows:
+        print("ROW COUNT:", len(rows))
+
+        for row in rows[:15]:
 
             cells = [
-                clean(cell.get_text(" ", strip=True))
+                " ".join(cell.get_text(" ", strip=True).split())
                 for cell in row.find_all(["td", "th"])
             ]
 
-            if len(cells) < 2:
-                continue
+            print(cells)
 
-            row_text = " ".join(cells)
+    # --------------------------------------------------
+    # PRAYER WORDS
+    # --------------------------------------------------
 
-            prayer = None
+    text = " ".join(soup.stripped_strings)
 
-            # Identify prayer
-            if re.search(r"\bFajr\b", row_text, re.IGNORECASE):
-                prayer = "fajr"
+    print("\nPRAYER WORD SEARCH:")
 
-            elif re.search(
-                r"\b(?:Dhuhr|Zuhr|Zuhur)\b",
-                row_text,
+    for word in [
+        "Fajr",
+        "Dhuhr",
+        "Zuhr",
+        "Asr",
+        "Maghrib",
+        "Isha",
+        "Iqamah",
+        "Adhaan",
+        "Adhan",
+        "Athan",
+    ]:
+
+        matches = len(
+            re.findall(
+                re.escape(word),
+                text,
                 re.IGNORECASE
-            ):
-                prayer = "dhuhr"
-
-            elif re.search(r"\bAsr\b", row_text, re.IGNORECASE):
-                prayer = "asr"
-
-            elif re.search(r"\bMaghrib\b", row_text, re.IGNORECASE):
-                prayer = "maghrib"
-
-            elif re.search(r"\bIsha\b", row_text, re.IGNORECASE):
-                prayer = "isha"
-
-            if not prayer:
-                continue
-
-            times = find_time_strings(row_text)
-
-            if len(times) >= 2:
-
-                prayers[prayer] = {
-                    "athan": time_to_24h(times[0]),
-                    "iqamah": time_to_24h(times[1]),
-                }
-
-    return prayers
-
-
-# --------------------------------------------------
-# VALIDATION
-# --------------------------------------------------
-
-def validate_prayers(name, prayers):
-
-    print(f"\n{name} prayer count: {len(prayers)}")
-
-    print(json.dumps(prayers, indent=2))
-
-    missing = [
-        prayer
-        for prayer in PRAYERS
-        if prayer not in prayers
-    ]
-
-    if missing:
-
-        print(
-            f"\n{name} is missing: "
-            + ", ".join(missing)
+            )
         )
 
-        return False
+        print(f"{word}: {matches}")
 
-    return True
+    # --------------------------------------------------
+    # TIME STRINGS
+    # --------------------------------------------------
 
+    times = re.findall(
+        r"\b\d{1,2}:\d{2}\s*(?:AM|PM)\b",
+        text,
+        re.IGNORECASE
+    )
 
-# --------------------------------------------------
-# MAIN
-# --------------------------------------------------
+    print("\nTIME STRINGS FOUND:", len(times))
+
+    print(times[:100])
+
+    # --------------------------------------------------
+    # SCRIPT TAGS
+    # --------------------------------------------------
+
+    scripts = soup.find_all("script")
+
+    print("\nSCRIPT TAG COUNT:", len(scripts))
+
+    for i, script in enumerate(scripts):
+
+        script_text = script.string or script.get_text()
+
+        if not script_text:
+            continue
+
+        interesting = any(
+            word.lower() in script_text.lower()
+            for word in [
+                "fajr",
+                "dhuhr",
+                "zuhr",
+                "asr",
+                "maghrib",
+                "isha",
+                "iqamah",
+                "athan",
+                "prayer",
+                "api",
+            ]
+        )
+
+        if interesting:
+
+            print("\n--- INTERESTING SCRIPT", i, "---")
+
+            print(script_text[:5000])
+
+    # --------------------------------------------------
+    # LINKS
+    # --------------------------------------------------
+
+    print("\nLINKS CONTAINING PRAYER/TIME/MONTH:")
+
+    for link in soup.find_all("a", href=True):
+
+        href = link.get("href", "")
+        label = " ".join(link.stripped_strings)
+
+        combined = f"{label} {href}".lower()
+
+        if any(
+            word in combined
+            for word in [
+                "prayer",
+                "times",
+                "monthly",
+                "calendar",
+                "api",
+            ]
+        ):
+
+            print(
+                "LABEL:",
+                label,
+                "| HREF:",
+                href
+            )
+
 
 def main():
 
-    print("=" * 60)
-    print("MOSQUE PRAYER TIME TEST")
-    print("Date:", TODAY)
-    print("=" * 60)
+    print("=" * 80)
+    print("MOSQUE PRAYER TIME DIAGNOSTIC")
+    print("DATE:", TODAY)
+    print("=" * 80)
 
-    results = {
-        "date": TODAY,
-        "mosques": {}
-    }
+    for name, url in URLS.items():
 
-    success = True
+        try:
 
-    # --------------------------------------------------
-    # ICRR
-    # --------------------------------------------------
+            html = get_page(name, url)
 
-    print("\n" + "=" * 60)
-    print("ICRR")
-    print("=" * 60)
+            inspect_page(name, html)
 
-    try:
+        except Exception as e:
 
-        icrr = get_icrr()
+            print("\nERROR:", repr(e))
 
-        results["mosques"]["ICRR"] = icrr
-
-        if not validate_prayers("ICRR", icrr):
-            success = False
-
-    except Exception as e:
-
-        print("ICRR ERROR:", repr(e))
-
-        results["mosques"]["ICRR"] = {
-            "error": str(e)
-        }
-
-        success = False
-
-    # --------------------------------------------------
-    # NAMCC
-    # --------------------------------------------------
-
-    print("\n" + "=" * 60)
-    print("NAMCC")
-    print("=" * 60)
-
-    try:
-
-        namcc = get_namcc()
-
-        results["mosques"]["NAMCC"] = namcc
-
-        if not validate_prayers("NAMCC", namcc):
-            success = False
-
-    except Exception as e:
-
-        print("NAMCC ERROR:", repr(e))
-
-        results["mosques"]["NAMCC"] = {
-            "error": str(e)
-        }
-
-        success = False
-
-    # --------------------------------------------------
-    # RAW RESULT
-    # --------------------------------------------------
-
-    print("\n" + "=" * 60)
-    print("RAW RESULT")
-    print("=" * 60)
-
-    print(json.dumps(results, indent=2))
-
-    # --------------------------------------------------
-    # FAIL WORKFLOW IF DATA IS MISSING
-    # --------------------------------------------------
-
-    if not success:
-
-        print("\n❌ Prayer-time retrieval was incomplete.")
-
-        sys.exit(1)
-
-    print("\n✅ Prayer-time retrieval successful.")
+    print("\n" + "=" * 80)
+    print("DIAGNOSTIC COMPLETE")
+    print("=" * 80)
 
 
 if __name__ == "__main__":
