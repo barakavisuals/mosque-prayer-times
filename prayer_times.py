@@ -551,8 +551,13 @@ def get_icrr():
 
     now = get_today()
 
+    target_date = now.date()
+
+    # Official ICRR prayer-times page embeds this
+    # Masjidal widget.
     url = (
-        "https://ourmasajid.com/m/icrr/prayer-times"
+        "https://timing.athanplus.com/masjid/widgets/embed"
+        "?masjid_id=E5AvRnAX&theme=3"
     )
 
     response = requests.get(
@@ -570,175 +575,222 @@ def get_icrr():
         "html.parser"
     )
 
-    target_date = now.date()
+    # Convert the widget into clean text.
+    #
+    # The widget contains seven repeated blocks:
+    #
+    # PRAYER TIMINGS
+    # Monday, Sep 21, 2026
+    # ...
+    # Fajr 6:14 AM 6:25 AM
+    # Sunrise 7:18 AM
+    # Dhuhr 1:24 PM 2:00 PM
+    # Asr 5:45 PM 6:00 PM
+    # Maghrib 7:28 PM 7:33 PM
+    # Isha 8:34 PM 9:05 PM
+    #
+    # We split on "PRAYER TIMINGS" so the correct
+    # day's block can be identified reliably.
 
-    for table in soup.find_all("table"):
+    page_text = soup.get_text(
+        " ",
+        strip=True
+    )
 
-        rows = table.find_all("tr")
+    blocks = re.split(
+        r"\bPRAYER\s+TIMINGS\b",
+        page_text,
+        flags=re.IGNORECASE
+    )
 
-        if len(rows) < 2:
+    target_date_text = now.strftime(
+        "%A, %b %-d, %Y"
+    )
+
+    # Linux/GitHub Actions supports %-d.
+    # Keep a fallback for environments that do not.
+    target_date_text_alt = now.strftime(
+        "%A, %b %d, %Y"
+    ).replace(
+        " 0",
+        " "
+    )
+
+    for block in blocks:
+
+        if not block.strip():
             continue
 
-        headers = [
-            cell.get_text(
-                " ",
-                strip=True
-            ).lower()
-            for cell in rows[0].find_all(
-                ["th", "td"]
-            )
-        ]
+        # ----------------------------------------------------
+        # Confirm this is today's block.
+        # ----------------------------------------------------
 
-        required_headers = [
-            "date",
-            "fajr",
-            "dhuhr",
-            "asr",
-            "maghrib",
-            "isha",
-        ]
-
-        if not all(
-            any(
-                required in header
-                for header in headers
-            )
-            for required in required_headers
+        if not (
+            target_date_text.lower() in block.lower()
+            or target_date_text_alt.lower() in block.lower()
         ):
             continue
 
-        for row in rows[1:]:
+        print(
+            "ICRR matched today's widget block:",
+            target_date_text
+        )
 
-            cells = [
-                cell.get_text(
-                    " ",
-                    strip=True
-                )
-                for cell in row.find_all(
-                    ["th", "td"]
-                )
+        # ----------------------------------------------------
+        # Extract each prayer row.
+        #
+        # We use the prayer name as the anchor and capture
+        # the next one or two AM/PM times.
+        # ----------------------------------------------------
+
+        def get_row_times(
+            prayer_name
+        ):
+
+            pattern = (
+                rf"\b{prayer_name}\b"
+                rf".{{0,100}}?"
+                rf"(\d{{1,2}}:\d{{2}}\s*(?:AM|PM))"
+                rf"(?:\s+(\d{{1,2}}:\d{{2}}\s*(?:AM|PM)))?"
+            )
+
+            match = re.search(
+                pattern,
+                block,
+                flags=re.IGNORECASE
+            )
+
+            if not match:
+                return []
+
+            return [
+                value
+                for value in match.groups()
+                if value
             ]
 
-            if len(cells) < 7:
-                continue
+        fajr_times = get_row_times(
+            "Fajr"
+        )
 
-            date_text = cells[0]
+        sunrise_times = get_row_times(
+            "Sunrise"
+        )
 
-            if (
-                target_date.strftime("%b").lower()
-                not in date_text.lower()
-            ):
-                continue
+        dhuhr_times = get_row_times(
+            "Dhuhr"
+        )
 
-            if not re.search(
-                rf"\b{target_date.day}\b",
-                date_text
-            ):
-                continue
+        asr_times = get_row_times(
+            "Asr"
+        )
 
-            # Date
-            # fajr
-            # Sunrise
-            # Dhuhr
-            # Asr
-            # Maghrib
-            # Isha
+        maghrib_times = get_row_times(
+            "Maghrib"
+        )
 
-            sunrise_times = extract_times(
-                cells[2]
+        isha_times = get_row_times(
+            "Isha"
+        )
+
+        # ----------------------------------------------------
+        # Validate the rows before returning anything.
+        # ----------------------------------------------------
+
+        if len(fajr_times) < 2:
+            raise RuntimeError(
+                "ICRR: could not parse Fajr Athan/Iqamah"
             )
 
-            fajr_times = extract_times(
-                cells[1]
+        if len(sunrise_times) < 1:
+            raise RuntimeError(
+                "ICRR: could not parse Sunrise"
             )
 
-            dhuhr_times = extract_times(
-                cells[3]
+        if len(dhuhr_times) < 2:
+            raise RuntimeError(
+                "ICRR: could not parse Dhuhr Athan/Iqamah"
             )
 
-            asr_times = extract_times(
-                cells[4]
+        if len(asr_times) < 2:
+            raise RuntimeError(
+                "ICRR: could not parse Asr Athan/Iqamah"
             )
 
-            maghrib_times = extract_times(
-                cells[5]
+        if len(maghrib_times) < 2:
+            raise RuntimeError(
+                "ICRR: could not parse Maghrib Athan/Iqamah"
             )
 
-            isha_times = extract_times(
-                cells[6]
+        if len(isha_times) < 2:
+            raise RuntimeError(
+                "ICRR: could not parse Isha Athan/Iqamah"
             )
 
-            if not sunrise_times:
-                raise RuntimeError(
-                    "ICRR: could not parse Sunrise"
-                )
+        result = {
 
-            if not all([
-                len(fajr_times) >= 2,
-                len(dhuhr_times) >= 2,
-                len(asr_times) >= 2,
-                len(maghrib_times) >= 2,
-                len(isha_times) >= 2,
-            ]):
+            "sunrise": parse_time(
+                sunrise_times[0]
+            ),
 
-                raise RuntimeError(
-                    "ICRR: found today's row but could not "
-                    "parse all Athan/Iqamah times"
-                )
-
-            return {
-                "sunrise": parse_time(
-                    sunrise_times[0]
+            "fajr": {
+                "athan": parse_time(
+                    fajr_times[0]
                 ),
+                "iqamah": parse_time(
+                    fajr_times[1]
+                ),
+            },
 
-                "fajr": {
-                    "athan": parse_time(
-                        fajr_times[0]
-                    ),
-                    "iqamah": parse_time(
-                        fajr_times[1]
-                    ),
-                },
+            "dhuhr": {
+                "athan": parse_time(
+                    dhuhr_times[0]
+                ),
+                "iqamah": parse_time(
+                    dhuhr_times[1]
+                ),
+            },
 
-                "dhuhr": {
-                    "athan": parse_time(
-                        dhuhr_times[0]
-                    ),
-                    "iqamah": parse_time(
-                        dhuhr_times[1]
-                    ),
-                },
+            "asr": {
+                "athan": parse_time(
+                    asr_times[0]
+                ),
+                "iqamah": parse_time(
+                    asr_times[1]
+                ),
+            },
 
-                "asr": {
-                    "athan": parse_time(
-                        asr_times[0]
-                    ),
-                    "iqamah": parse_time(
-                        asr_times[1]
-                    ),
-                },
+            "maghrib": {
+                "athan": parse_time(
+                    maghrib_times[0]
+                ),
+                "iqamah": parse_time(
+                    maghrib_times[1]
+                ),
+            },
 
-                "maghrib": {
-                    "athan": parse_time(
-                        maghrib_times[0]
-                    ),
-                    "iqamah": parse_time(
-                        maghrib_times[1]
-                    ),
-                },
+            "isha": {
+                "athan": parse_time(
+                    isha_times[0]
+                ),
+                "iqamah": parse_time(
+                    isha_times[1]
+                ),
+            },
+        }
 
-                "isha": {
-                    "athan": parse_time(
-                        isha_times[0]
-                    ),
-                    "iqamah": parse_time(
-                        isha_times[1]
-                    ),
-                },
-            }
+        print(
+            "ICRR combined prayer times:",
+            json.dumps(
+                result,
+                indent=2
+            )
+        )
+
+        return result
 
     raise RuntimeError(
-        f"ICRR: could not find today's row ({target_date})"
+        f"ICRR: could not find today's widget block ({target_date})"
     )
 
 
