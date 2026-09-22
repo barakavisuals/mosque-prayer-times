@@ -1,6 +1,7 @@
+```python
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
 import json
 import re
@@ -755,7 +756,7 @@ def get_icp():
     url = (
         "https://ummahsoft.org/salahtime/api/"
         "masjidi/v1/index.php/"
-        f"masjids/50001/iqamahandprayertimes/"
+        "masjids/50001/iqamahandprayertimes/"
         f"{now.year}/{now.month}"
     )
 
@@ -1156,6 +1157,116 @@ def get_icp():
 
 
 # ============================================================
+# NOTIFICATION CALCULATION
+# ============================================================
+
+def calculate_notifications(results):
+    """
+    For each prayer, find the earliest Athan across
+    NAMCC, ICP, and ICRR.
+
+    Then calculate a notification time exactly
+    15 minutes before that earliest Athan.
+    """
+
+    prayers = [
+        "fajr",
+        "dhuhr",
+        "asr",
+        "maghrib",
+        "isha",
+    ]
+
+    notifications = {}
+
+    for prayer in prayers:
+
+        candidates = []
+
+        for masjid in (
+            "NAMCC",
+            "ICP",
+            "ICRR"
+        ):
+
+            masjid_data = results.get(
+                masjid
+            )
+
+            if not isinstance(
+                masjid_data,
+                dict
+            ):
+                continue
+
+            prayer_data = masjid_data.get(
+                prayer
+            )
+
+            if not isinstance(
+                prayer_data,
+                dict
+            ):
+                continue
+
+            athan = prayer_data.get(
+                "athan"
+            )
+
+            if not athan:
+                continue
+
+            try:
+
+                parsed = datetime.strptime(
+                    athan,
+                    "%H:%M"
+                )
+
+                candidates.append(
+                    (
+                        parsed,
+                        masjid,
+                        athan
+                    )
+                )
+
+            except ValueError:
+
+                print(
+                    f"Notification calculation: "
+                    f"invalid {masjid} {prayer} Athan: {athan}"
+                )
+
+        if not candidates:
+            notifications[prayer] = None
+            continue
+
+        earliest_datetime, earliest_masjid, earliest_athan = min(
+            candidates,
+            key=lambda item: item[0]
+        )
+
+        notification_datetime = (
+            earliest_datetime
+            - timedelta(minutes=15)
+        )
+
+        notifications[prayer] = {
+
+            "earliest_athan": earliest_athan,
+
+            "earliest_masjid": earliest_masjid,
+
+            "notify_at": notification_datetime.strftime(
+                "%H:%M"
+            ),
+        }
+
+    return notifications
+
+
+# ============================================================
 # MAIN
 # ============================================================
 
@@ -1239,6 +1350,25 @@ def main():
         )
 
     # --------------------------------------------------------
+    # NOTIFICATIONS
+    # --------------------------------------------------------
+
+    notifications = calculate_notifications(
+        results
+    )
+
+    print(
+        "\nCalculated notifications:"
+    )
+
+    print(
+        json.dumps(
+            notifications,
+            indent=2
+        )
+    )
+
+    # --------------------------------------------------------
     # FINAL JSON
     # --------------------------------------------------------
 
@@ -1259,6 +1389,8 @@ def main():
         "ICP": results.get(
             "ICP"
         ),
+
+        "notifications": notifications,
     }
 
     with open(
@@ -1289,3 +1421,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
