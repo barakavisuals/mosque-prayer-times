@@ -1,9 +1,9 @@
 {
-  "date": "2026-09-29",
+  "date": "2026-09-30",
   "NAMCC": {
-    "sunrise": "07:23",
+    "sunrise": "07:24",
     "fajr": {
-      "athan": "06:19",
+      "athan": "06:20",
       "iqamah": "06:45"
     },
     "dhuhr": {
@@ -11,15 +11,15 @@
       "iqamah": "14:00"
     },
     "asr": {
-      "athan": "16:46",
+      "athan": "16:45",
       "iqamah": "17:15"
     },
     "maghrib": {
-      "athan": "19:19",
-      "iqamah": "19:24"
+      "athan": "19:18",
+      "iqamah": "19:23"
     },
     "isha": {
-      "athan": "20:25",
+      "athan": "20:24",
       "iqamah": "20:45"
     }
   },
@@ -34,66 +34,66 @@
       "iqamah": "14:00"
     },
     "asr": {
-      "athan": "17:37",
+      "athan": "17:36",
       "iqamah": "18:00"
     },
     "maghrib": {
-      "athan": "19:18",
-      "iqamah": "19:23"
+      "athan": "19:17",
+      "iqamah": "19:22"
     },
     "isha": {
-      "athan": "20:24",
+      "athan": "20:23",
       "iqamah": "20:55"
     }
   },
   "ICP": {
-    "sunrise": "07:23",
+    "sunrise": "07:24",
     "fajr": {
-      "athan": "06:03",
+      "athan": "06:04",
       "iqamah": "06:30"
     },
     "dhuhr": {
-      "athan": "13:21",
+      "athan": "13:20",
       "iqamah": "14:00"
     },
     "asr": {
-      "athan": "17:37",
+      "athan": "17:36",
       "iqamah": "18:00"
     },
     "maghrib": {
-      "athan": "19:21",
+      "athan": "19:20",
       "iqamah": "19:27"
     },
     "isha": {
-      "athan": "20:38",
+      "athan": "20:37",
       "iqamah": "21:00"
     }
   },
   "notifications": {
     "fajr": {
-      "earliest_athan": "06:03",
+      "earliest_athan": "06:04",
       "earliest_masjid": "ICP",
-      "notify_at": "05:48"
+      "notify_at": "05:49"
     },
     "dhuhr": {
-      "earliest_athan": "13:21",
+      "earliest_athan": "13:20",
       "earliest_masjid": "ICP",
-      "notify_at": "13:06"
+      "notify_at": "13:05"
     },
     "asr": {
-      "earliest_athan": "16:46",
+      "earliest_athan": "16:45",
       "earliest_masjid": "NAMCC",
-      "notify_at": "16:31"
+      "notify_at": "16:30"
     },
     "maghrib": {
-      "earliest_athan": "19:18",
+      "earliest_athan": "19:17",
       "earliest_masjid": "ICRR",
-      "notify_at": "19:03"
+      "notify_at": "19:02"
     },
     "isha": {
-      "earliest_athan": "20:24",
+      "earliest_athan": "20:23",
       "earliest_masjid": "ICRR",
-      "notify_at": "20:09"
+      "notify_at": "20:08"
     }
   }
 }
