@@ -1,10 +1,10 @@
 {
-  "date": "2026-10-03",
+  "date": "2026-10-04",
   "NAMCC": null,
   "ICRR": {
-    "sunrise": "07:25",
+    "sunrise": "07:26",
     "fajr": {
-      "athan": "06:21",
+      "athan": "06:22",
       "iqamah": "06:35"
     },
     "dhuhr": {
@@ -12,22 +12,22 @@
       "iqamah": "14:00"
     },
     "asr": {
-      "athan": "17:33",
+      "athan": "17:32",
       "iqamah": "17:50"
     },
     "maghrib": {
-      "athan": "19:13",
-      "iqamah": "19:18"
+      "athan": "19:12",
+      "iqamah": "19:17"
     },
     "isha": {
-      "athan": "20:19",
+      "athan": "20:18",
       "iqamah": "20:45"
     }
   },
   "ICP": {
-    "sunrise": "07:25",
+    "sunrise": "07:26",
     "fajr": {
-      "athan": "06:05",
+      "athan": "06:06",
       "iqamah": "06:30"
     },
     "dhuhr": {
@@ -35,23 +35,23 @@
       "iqamah": "14:00"
     },
     "asr": {
-      "athan": "17:33",
+      "athan": "17:32",
       "iqamah": "18:00"
     },
     "maghrib": {
-      "athan": "19:16",
-      "iqamah": "19:22"
+      "athan": "19:15",
+      "iqamah": "19:18"
     },
     "isha": {
-      "athan": "20:33",
-      "iqamah": "21:00"
+      "athan": "20:32",
+      "iqamah": "20:45"
     }
   },
   "notifications": {
     "fajr": {
-      "earliest_athan": "06:05",
+      "earliest_athan": "06:06",
       "earliest_masjid": "ICP",
-      "notify_at": "05:50"
+      "notify_at": "05:51"
     },
     "dhuhr": {
       "earliest_athan": "13:19",
@@ -59,19 +59,19 @@
       "notify_at": "13:04"
     },
     "asr": {
-      "earliest_athan": "17:33",
+      "earliest_athan": "17:32",
       "earliest_masjid": "ICP",
-      "notify_at": "17:18"
+      "notify_at": "17:17"
     },
     "maghrib": {
-      "earliest_athan": "19:13",
+      "earliest_athan": "19:12",
       "earliest_masjid": "ICRR",
-      "notify_at": "18:58"
+      "notify_at": "18:57"
     },
     "isha": {
-      "earliest_athan": "20:19",
+      "earliest_athan": "20:18",
       "earliest_masjid": "ICRR",
-      "notify_at": "20:04"
+      "notify_at": "20:03"
     }
   }
 }
