@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-10",
+  "date": "2026-10-11",
   "NAMCC": {
     "sunrise": "07:30",
     "fajr": {
@@ -7,26 +7,26 @@
       "iqamah": "06:45"
     },
     "dhuhr": {
-      "athan": "13:20",
+      "athan": "13:19",
       "iqamah": "14:00"
     },
     "asr": {
-      "athan": "16:37",
+      "athan": "16:36",
       "iqamah": "17:00"
     },
     "maghrib": {
-      "athan": "19:07",
-      "iqamah": "19:12"
+      "athan": "19:06",
+      "iqamah": "19:11"
     },
     "isha": {
-      "athan": "20:12",
+      "athan": "20:11",
       "iqamah": "20:30"
     }
   },
   "ICRR": {
     "sunrise": "07:30",
     "fajr": {
-      "athan": "06:25",
+      "athan": "06:26",
       "iqamah": "06:35"
     },
     "dhuhr": {
@@ -34,15 +34,15 @@
       "iqamah": "14:00"
     },
     "asr": {
-      "athan": "17:26",
+      "athan": "17:24",
       "iqamah": "17:40"
     },
     "maghrib": {
-      "athan": "19:05",
-      "iqamah": "19:10"
+      "athan": "19:04",
+      "iqamah": "19:09"
     },
     "isha": {
-      "athan": "20:11",
+      "athan": "20:10",
       "iqamah": "20:35"
     }
   },
@@ -57,15 +57,15 @@
       "iqamah": "14:00"
     },
     "asr": {
-      "athan": "17:26",
-      "iqamah": "18:00"
+      "athan": "17:25",
+      "iqamah": "17:45"
     },
     "maghrib": {
-      "athan": "19:08",
-      "iqamah": "19:18"
+      "athan": "19:07",
+      "iqamah": "19:10"
     },
     "isha": {
-      "athan": "20:25",
+      "athan": "20:24",
       "iqamah": "20:45"
     }
   },
@@ -81,19 +81,19 @@
       "notify_at": "13:02"
     },
     "asr": {
-      "earliest_athan": "16:37",
+      "earliest_athan": "16:36",
       "earliest_masjid": "NAMCC",
-      "notify_at": "16:22"
+      "notify_at": "16:21"
     },
     "maghrib": {
-      "earliest_athan": "19:05",
+      "earliest_athan": "19:04",
       "earliest_masjid": "ICRR",
-      "notify_at": "18:50"
+      "notify_at": "18:49"
     },
     "isha": {
-      "earliest_athan": "20:11",
+      "earliest_athan": "20:10",
       "earliest_masjid": "ICRR",
-      "notify_at": "19:56"
+      "notify_at": "19:55"
     }
   }
 }
