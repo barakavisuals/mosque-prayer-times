@@ -1,23 +1,45 @@
 {
-  "date": "2026-11-20",
-  "NAMCC": null,
-  "ICRR": {
-    "sunrise": "07:01",
+  "date": "2026-11-21",
+  "NAMCC": {
+    "sunrise": "07:02",
     "fajr": {
       "athan": "05:53",
-      "iqamah": "06:10"
+      "iqamah": "06:15"
+    },
+    "dhuhr": {
+      "athan": "12:19",
+      "iqamah": "13:00"
+    },
+    "asr": {
+      "athan": "15:13",
+      "iqamah": "15:45"
+    },
+    "maghrib": {
+      "athan": "17:34",
+      "iqamah": "17:39"
+    },
+    "isha": {
+      "athan": "18:42",
+      "iqamah": "19:00"
+    }
+  },
+  "ICRR": {
+    "sunrise": "07:02",
+    "fajr": {
+      "athan": "05:54",
+      "iqamah": "06:15"
     },
     "dhuhr": {
       "athan": "12:17",
       "iqamah": "14:00"
     },
     "asr": {
-      "athan": "15:55",
+      "athan": "15:54",
       "iqamah": "16:45"
     },
     "maghrib": {
-      "athan": "17:32",
-      "iqamah": "17:37"
+      "athan": "17:31",
+      "iqamah": "17:36"
     },
     "isha": {
       "athan": "18:41",
@@ -25,9 +47,9 @@
     }
   },
   "ICP": {
-    "sunrise": "07:01",
+    "sunrise": "07:02",
     "fajr": {
-      "athan": "05:37",
+      "athan": "05:38",
       "iqamah": "06:15"
     },
     "dhuhr": {
@@ -35,7 +57,7 @@
       "iqamah": "14:00"
     },
     "asr": {
-      "athan": "15:55",
+      "athan": "15:54",
       "iqamah": "16:30"
     },
     "maghrib": {
@@ -49,9 +71,9 @@
   },
   "notifications": {
     "fajr": {
-      "earliest_athan": "05:37",
+      "earliest_athan": "05:38",
       "earliest_masjid": "ICP",
-      "notify_at": "05:22"
+      "notify_at": "05:23"
     },
     "dhuhr": {
       "earliest_athan": "12:16",
@@ -59,14 +81,14 @@
       "notify_at": "12:01"
     },
     "asr": {
-      "earliest_athan": "15:55",
-      "earliest_masjid": "ICP",
-      "notify_at": "15:40"
+      "earliest_athan": "15:13",
+      "earliest_masjid": "NAMCC",
+      "notify_at": "14:58"
     },
     "maghrib": {
-      "earliest_athan": "17:32",
+      "earliest_athan": "17:31",
       "earliest_masjid": "ICRR",
-      "notify_at": "17:17"
+      "notify_at": "17:16"
     },
     "isha": {
       "earliest_athan": "18:41",
